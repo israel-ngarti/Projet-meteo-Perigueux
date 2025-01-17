@@ -1,0 +1,440 @@
+---
+title: "Analyse en Composantes Principales"
+author: "Jeu de données df"
+output:
+  html_document: default
+---
+Ce jeu de données contient 7852 individus et 25 variables, 1 variable qualitative est illustrative.
+
+- - -
+
+```{r, echo = FALSE}
+library(FactoMineR)
+load('C:/Users/israe/OneDrive/Documents/Projets/Projets M1/Représentation de données/Projet/Workspace.RData')
+```
+### 1. Observation d'individus extrêmes
+L'analyse des graphes ne révèle aucun individu singulier.
+
+- - -
+
+### 2. Distribution de l'inertie
+L'inertie des axes factoriels indique d'une part si les variables sont structurées et suggère d'autre part le nombre judicieux de composantes principales à étudier.
+
+Les 2 premiers axes de l' analyse expriment **40.81%** de l'inertie totale du jeu de données ; cela signifie que 40.81% de la variabilité totale du nuage des individus (ou des variables) est représentée dans ce plan.
+C'est un pourcentage relativement moyen, et le premier plan représente donc seulement une part de la variabilité contenue dans l'ensemble du jeu de données actif.
+Cette valeur est nettement supérieure à la valeur référence de **9.19%**, la variabilité expliquée par ce plan est donc hautement significative
+(cette intertie de référence est le quantile 0.95-quantile de la distribution des pourcentages d'inertie obtenue en simulant 570 jeux de données aléatoires de dimensions comparables sur la base d'une distribution normale).
+
+Du fait de ces observations, il serait alors probablement nécessaire de considérer également les dimensions supérieures ou égales à la troisième dans l'analyse.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+par(mar = c(2.6, 4.1, 1.1, 2.1))
+ggplot2::ggplot(cbind.data.frame(x=1:nrow(res$eig),y=res$eig[,2])) + ggplot2::aes(x=x, y=y)+ ggplot2::geom_col(fill="blue") + ggplot2::xlab("Dimension") + ggplot2::ylab("Pourcentage d'inertie") + ggplot2::ggtitle("Décomposition de l'inertie totale") + ggplot2::theme_light() + ggplot2::theme(plot.title = ggplot2::element_text(hjust =0.5)) + ggplot2::scale_x_continuous(breaks=1:nrow(res$eig))
+```
+
+**Figure 2 - Décomposition de l'inertie totale**
+
+Une estimation du nombre pertinent d'axes à interpréter suggère de restreindre l'analyse à la description des 7 premiers axes.
+Ces composantes révèlent un taux d'inertie supérieur à celle du quantile 0.95-quantile de distributions aléatoires (74.65% contre 31.26%).
+Cette observation suggère que seuls ces axes sont porteurs d'une véritable information.
+En conséquence, la description de l'analyse sera restreinte à ces seuls axes.
+
+- - -
+
+### 3. Description du plan 1:2
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+integer(0)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = c(1,2), choix = 'ind', invisible = 'quali', title = '', cex = cex)
+```
+
+**Figure 3.1 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+
+La probabilité critique du test de Wilks indique la variable dont les modalités sépare au mieux les individus sur le plan (i.e. qui explique au mieux les distances entre individus).
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+wilks.p <-
+c(jour = 6.5102996803997449e-10)
+wilks.p
+```
+Il n'y a qu'une unique variable qualitative possible pour illustrer les distances entre individus : *jour*.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+sample = sample(rownames(res$call$X), length(rownames(res$call$X)))
+res$call$X = res$call$X[sample,]
+res$ind$coord = res$ind$coord[sample[!sample %in% rownames(res$ind.sup$coord)],]
+res$ind.sup$coord = res$ind.sup$coord[sample[sample %in% rownames(res$ind.sup$coord)],,drop=FALSE]
+drawn <-
+integer(0)
+hab <-
+"jour"
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plotellipses(res, axes = 1:2, select = drawn, keepvar = hab, title = '', cex = cex)
+```
+
+**Figure 3.2 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+*Les individus sont colorés selon leur appartenance aux modalités de la variable* jour.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("pluie_6h", "temperature", "pluie_3h", "pluie_12h", "temperature_max", 
+"pluie_cumul_0h", "pluie_1h", "O3", "humidite", "point_de_rosee"
+)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 1:2, choix = 'var', title = '', cex = cex)
+```
+
+**Figure 3.3 - Graphe des variables (ACP)**
+*Les variables libellées sont celles les mieux représentées sur le plan.*
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("mercredi", "jeudi", "lundi")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 1:2, choix = 'ind', invisible = c('ind', 'ind.sup'), title = '', cex = cex)
+```
+
+**Figure 3.4 - Graphe des modalités (ACP)**
+*Les facteurs libellés sont ceux les mieux représentés sur le plan.*
+
+* * *
+
+La **dimension 1** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (à droite du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (à gauche du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *temperature*, *temperature_max*, *O3*, *point_de_rosee*, *temperature_min*, *vent_rafales_10min*, *vent_moyen*, *heure* et *vent_direction* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *humidite*, *NO2*, *NO*, *pluie_6h*, *pluie_12h*, *pluie_3h*, *pluie_cumul_0h*, *pluie_24h*, *pression_variation_3h* et *pluie_1h* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *pluie_12h*, *pluie_6h*, *pluie_cumul_0h*, *pluie_3h*, *pluie_24h*, *pluie_1h*, *pluie_intensite*, *pluie_intensite_max_1h*, *humidite* et *vent_rafales_10min* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *pression*, *PM10*, *NO* et *NO2* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *NO2*, *humidite*, *pression*, *NO*, *PM10*, *pression_variation_3h* et *vent_rafales* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *O3*, *temperature*, *temperature_max*, *point_de_rosee*, *temperature_min*, *vent_rafales_10min*, *vent_moyen*, *heure*, *vent_direction* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+
+* * *
+
+La **dimension 2** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (en haut du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (en bas du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *NO2*, *humidite*, *pression*, *NO*, *PM10*, *pression_variation_3h* et *vent_rafales* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *O3*, *temperature*, *temperature_max*, *point_de_rosee*, *temperature_min*, *vent_rafales_10min*, *vent_moyen*, *heure*, *vent_direction* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *pluie_12h*, *pluie_6h*, *pluie_cumul_0h*, *pluie_3h*, *pluie_24h*, *pluie_1h*, *pluie_intensite*, *pluie_intensite_max_1h*, *humidite* et *vent_rafales_10min* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *pression*, *PM10*, *NO* et *NO2* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *temperature*, *temperature_max*, *O3*, *point_de_rosee*, *temperature_min*, *vent_rafales_10min*, *vent_moyen*, *heure* et *vent_direction* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *humidite*, *NO2*, *NO*, *pluie_6h*, *pluie_12h*, *pluie_3h*, *pluie_cumul_0h*, *pluie_24h*, *pression_variation_3h* et *pluie_1h* (de la plus extrême à la moins extrême).
+
+
+- - -
+
+### 4. Description du plan 3:4
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+integer(0)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = c(3,4), choix = 'ind', invisible = 'quali', title = '', cex = cex)
+```
+
+**Figure 4.1 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+
+La probabilité critique du test de Wilks indique la variable dont les modalités sépare au mieux les individus sur le plan (i.e. qui explique au mieux les distances entre individus).
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+wilks.p <-
+c(jour = 1.9885982809874243e-23)
+wilks.p
+```
+Il n'y a qu'une unique variable qualitative possible pour illustrer les distances entre individus : *jour*.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+sample = sample(rownames(res$call$X), length(rownames(res$call$X)))
+res$call$X = res$call$X[sample,]
+res$ind$coord = res$ind$coord[sample[!sample %in% rownames(res$ind.sup$coord)],]
+res$ind.sup$coord = res$ind.sup$coord[sample[sample %in% rownames(res$ind.sup$coord)],,drop=FALSE]
+drawn <-
+integer(0)
+hab <-
+"jour"
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plotellipses(res, axes = 3:4, select = drawn, keepvar = hab, title = '', cex = cex)
+```
+
+**Figure 4.2 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+*Les individus sont colorés selon leur appartenance aux modalités de la variable* jour.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("vent_moyen", "heure", "vent_rafales_10min", "NO2", "point_de_rosee", 
+"NO", "temperature_min", "PM10")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 3:4, choix = 'var', title = '', cex = cex)
+```
+
+**Figure 4.3 - Graphe des variables (ACP)**
+*Les variables libellées sont celles les mieux représentées sur le plan.*
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("dimanche", "samedi", "vendredi")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 3:4, choix = 'ind', invisible = c('ind', 'ind.sup'), title = '', cex = cex)
+```
+
+**Figure 4.4 - Graphe des modalités (ACP)**
+*Les facteurs libellés sont ceux les mieux représentés sur le plan.*
+
+* * *
+
+La **dimension 3** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (à droite du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (à gauche du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *humidite*, *temperature_min*, *point_de_rosee*, *pluie_24h*, *pluie_12h*, *pluie_3h*, *pluie_6h* et *pluie_1h* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *heure*, *vent_moyen*, *vent_rafales_10min*, *NO2*, *NO*, *temperature_max*, *PM10*, *O3*, *pluie_cumul_0h* et *temperature* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *NO2*, *heure*, *NO*, *PM10*, *temperature_max*, *point_de_rosee*, *pression_variation_3h*, *temperature*, *pluie_cumul_0h* et *pression* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *vent_moyen*, *vent_rafales_10min*, *O3*, *pluie_24h*, *vent_direction*, *pluie_6h*, *pluie_3h*, *pluie_1h* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *vent_moyen*, *vent_rafales_10min*, *O3*, *heure*, *vent_direction* et *pluie_cumul_0h* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *humidite*, *temperature_min*, *point_de_rosee*, *PM10*, *NO2*, *pression_variation_3h*, *NO*, *temperature_max*, *pluie_24h* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+
+* * *
+
+La **dimension 4** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (en haut du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (en bas du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *vent_moyen*, *vent_rafales_10min*, *O3*, *heure*, *vent_direction* et *pluie_cumul_0h* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *humidite*, *temperature_min*, *point_de_rosee*, *PM10*, *NO2*, *pression_variation_3h*, *NO*, *temperature_max*, *pluie_24h* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *NO2*, *heure*, *NO*, *PM10*, *temperature_max*, *point_de_rosee*, *pression_variation_3h*, *temperature*, *pluie_cumul_0h* et *pression* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *vent_moyen*, *vent_rafales_10min*, *O3*, *pluie_24h*, *vent_direction*, *pluie_6h*, *pluie_3h*, *pluie_1h* et *pluie_12h* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *humidite*, *temperature_min*, *point_de_rosee*, *pluie_24h*, *pluie_12h*, *pluie_3h*, *pluie_6h* et *pluie_1h* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *heure*, *vent_moyen*, *vent_rafales_10min*, *NO2*, *NO*, *temperature_max*, *PM10*, *O3*, *pluie_cumul_0h* et *temperature* (de la plus extrême à la moins extrême).
+
+
+- - -
+
+### 5. Description du plan 5:6
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+integer(0)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = c(5,6), choix = 'ind', invisible = 'quali', title = '', cex = cex)
+```
+
+**Figure 5.1 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+
+La probabilité critique du test de Wilks indique la variable dont les modalités sépare au mieux les individus sur le plan (i.e. qui explique au mieux les distances entre individus).
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+wilks.p <-
+c(jour = 1.4932121775644238e-06)
+wilks.p
+```
+Il n'y a qu'une unique variable qualitative possible pour illustrer les distances entre individus : *jour*.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+sample = sample(rownames(res$call$X), length(rownames(res$call$X)))
+res$call$X = res$call$X[sample,]
+res$ind$coord = res$ind$coord[sample[!sample %in% rownames(res$ind.sup$coord)],]
+res$ind.sup$coord = res$ind.sup$coord[sample[sample %in% rownames(res$ind.sup$coord)],,drop=FALSE]
+drawn <-
+integer(0)
+hab <-
+"jour"
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plotellipses(res, axes = 5:6, select = drawn, keepvar = hab, title = '', cex = cex)
+```
+
+**Figure 5.2 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+*Les individus sont colorés selon leur appartenance aux modalités de la variable* jour.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("pression_variation_3h", "vent_direction", "pluie_intensite", 
+"pluie_intensite_max_1h", "pluie_1h", "pluie_24h", "heure", "pluie_12h"
+)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 5:6, choix = 'var', title = '', cex = cex)
+```
+
+**Figure 5.3 - Graphe des variables (ACP)**
+*Les variables libellées sont celles les mieux représentées sur le plan.*
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("samedi", "mercredi", "jeudi")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 5:6, choix = 'ind', invisible = c('ind', 'ind.sup'), title = '', cex = cex)
+```
+
+**Figure 5.4 - Graphe des modalités (ACP)**
+*Les facteurs libellés sont ceux les mieux représentés sur le plan.*
+
+* * *
+
+La **dimension 5** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (à droite du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (à gauche du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *vent_direction*, *pression_variation_3h*, *pression*, *heure*, *O3* et *temperature_max* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *vent_rafales_10min*, *vent_moyen*, *pluie_3h*, *pluie_6h*, *pluie_24h*, *pluie_12h*, *point_de_rosee*, *temperature*, *pluie_1h* et *PM10* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *pluie_1h*, *pluie_intensite*, *pluie_3h*, *pluie_intensite_max_1h*, *pluie_6h*, *vent_rafales*, *humidite*, *pluie_cumul_0h*, *pluie_12h* et *point_de_rosee* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *pression*, *PM10*, *heure*, *temperature_max*, *NO* et *pression_variation_3h* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *vent_rafales_10min*, *vent_moyen*, *PM10*, *temperature*, *pluie_24h*, *NO*, *point_de_rosee*, *pluie_12h*, *temperature_min* et *NO2* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *vent_direction*, *pression_variation_3h*, *pression*, *heure*, *O3*, *pluie_1h*, *pluie_intensite*, *pluie_intensite_max_1h*, *humidite* et *pluie_3h* (de la plus extrême à la moins extrême).
+
+
+* * *
+
+La **dimension 6** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (en haut du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (en bas du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *pluie_1h*, *pluie_intensite*, *pluie_3h*, *pluie_intensite_max_1h*, *pluie_6h*, *vent_rafales*, *humidite*, *pluie_cumul_0h*, *pluie_12h* et *point_de_rosee* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *pression*, *PM10*, *heure*, *temperature_max*, *NO* et *pression_variation_3h* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour les variables *vent_direction*, *pression_variation_3h*, *pression*, *heure*, *O3* et *temperature_max* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *vent_rafales_10min*, *vent_moyen*, *pluie_3h*, *pluie_6h*, *pluie_24h*, *pluie_12h*, *point_de_rosee*, *temperature*, *pluie_1h* et *PM10* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *vent_rafales_10min*, *vent_moyen*, *PM10*, *temperature*, *pluie_24h*, *NO*, *point_de_rosee*, *pluie_12h*, *temperature_min* et *NO2* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *vent_direction*, *pression_variation_3h*, *pression*, *heure*, *O3*, *pluie_1h*, *pluie_intensite*, *pluie_intensite_max_1h*, *humidite* et *pluie_3h* (de la plus extrême à la moins extrême).
+
+
+- - -
+
+### 6. Description de la dimension 7
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+integer(0)
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = c(7,8), choix = 'ind', invisible = 'quali', title = '', cex = cex)
+```
+
+**Figure 6.1 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+
+La probabilité critique du test de Wilks indique la variable dont les modalités sépare au mieux les individus sur le plan (i.e. qui explique au mieux les distances entre individus).
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+wilks.p <-
+c(jour = 7.3646970560071605e-13)
+wilks.p
+```
+Il n'y a qu'une unique variable qualitative possible pour illustrer les distances entre individus : *jour*.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+sample = sample(rownames(res$call$X), length(rownames(res$call$X)))
+res$call$X = res$call$X[sample,]
+res$ind$coord = res$ind$coord[sample[!sample %in% rownames(res$ind.sup$coord)],]
+res$ind.sup$coord = res$ind.sup$coord[sample[sample %in% rownames(res$ind.sup$coord)],,drop=FALSE]
+drawn <-
+integer(0)
+hab <-
+"jour"
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plotellipses(res, axes = 7:8, select = drawn, keepvar = hab, title = '', cex = cex)
+```
+
+**Figure 6.2 - Graphe des individus (ACP)**
+*Les individus libellés sont ceux ayant la plus grande contribution à la construction du plan.*
+*Les individus sont colorés selon leur appartenance aux modalités de la variable* jour.
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("vent_rafales", "heure", "vent_direction", "vent_rafales_10min", 
+"vent_moyen", "temperature_min", "PM10", "pression")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 7:8, choix = 'var', title = '', cex = cex)
+```
+
+**Figure 6.3 - Graphe des variables (ACP)**
+*Les variables libellées sont celles les mieux représentées sur le plan.*
+
+```{r, echo = FALSE, fig.align = 'center', fig.height = 3.5, fig.width = 5.5}
+drawn <-
+c("lundi", "dimanche", "mardi")
+par(mar = c(4.1, 4.1, 1.1, 2.1))
+plot.PCA(res, select = drawn, axes = 7:8, choix = 'ind', invisible = c('ind', 'ind.sup'), title = '', cex = cex)
+```
+
+**Figure 6.4 - Graphe des modalités (ACP)**
+*Les facteurs libellés sont ceux les mieux représentés sur le plan.*
+
+* * *
+
+La **dimension 7** oppose des individus caractérisés par une coordonnée fortement positive sur l'axe (à droite du graphe)
+à des individus caractérisés par une coordonnée fortement négative sur l'axe (à gauche du graphe).
+
+Le groupe 1 (caractérisés par une coordonnée positive sur l'axe) partage :
+
+- de fortes valeurs pour des variables telles que *vent_direction*, *vent_rafales_10min*, *vent_moyen*, *temperature_min*, *pression_variation_3h*, *point_de_rosee*, *humidite*, *PM10*, *pression* et *NO* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour les variables *heure*, *O3*, *vent_rafales*, *temperature_max*, *pluie_cumul_0h* et *pluie_intensite_max_1h* (de la plus extrême à la moins extrême).
+
+Le groupe 2 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *vent_rafales*, *pluie_intensite*, *pluie_1h*, *NO*, *NO2* et *PM10* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *temperature_max*, *point_de_rosee*, *temperature_min*, *vent_rafales_10min*, *pluie_24h*, *pluie_12h*, *pluie_cumul_0h*, *temperature*, *pluie_6h* et *O3* (de la plus extrême à la moins extrême).
+
+Le groupe 3 (caractérisés par une coordonnées négative sur l'axe) partage :
+
+- de fortes valeurs pour les variables *heure*, *O3*, *temperature_max*, *pluie_cumul_0h* et *pluie_intensite_max_1h* (de la plus extrême à la moins extrême).
+- de faibles valeurs pour des variables telles que *vent_direction*, *vent_moyen*, *vent_rafales_10min*, *temperature_min*, *pression_variation_3h*, *PM10*, *humidite*, *pression*, *vent_rafales* et *point_de_rosee* (de la plus extrême à la moins extrême).
+
+
+- - -
+
+### 7. Classification
+
+Le jeu de données est trop volumineux pour réaliser la classification.
+
+- - -
+
+## Annexes
+

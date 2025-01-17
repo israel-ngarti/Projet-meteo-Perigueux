@@ -1,0 +1,5 @@
+"0","# Graphiques pertinents"
+"0","ggplot(df, aes(x = humidite, y = O3)) +"
+"0","  geom_point() +"
+"0","  geom_smooth(method = ""lm"") +"
+"0","  labs(title = ""Relation entre l'humidité et l'ozone"", x = ""Humidité"", y = ""Ozone"")"

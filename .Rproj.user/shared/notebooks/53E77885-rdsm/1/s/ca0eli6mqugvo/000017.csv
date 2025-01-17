@@ -1,0 +1,6 @@
+"0","# Calcul de la matrice de corrélation pour les variables quantitatives"
+"0","quant_vars <- df %>% select(where(is.numeric))"
+"0","Matrix<-round(cor(quant_vars),3) #fonction round pour arrondir à 3 décimales "
+"0","# Matrice en HTML simple"
+"0","html_table <- htmlTable::htmlTable(Matrix, caption = ""Matrice de corrélation des variables quantitatives"")"
+"0","html_table"

@@ -1,0 +1,2 @@
+"0","df <-df %>% mutate(jour=wday(date_debut,label=TRUE,abbr=FALSE))"
+"0","df <- df %>% mutate(heure=hour(date_debut))"

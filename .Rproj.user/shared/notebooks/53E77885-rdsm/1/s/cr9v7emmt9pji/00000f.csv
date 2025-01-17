@@ -1,0 +1,11 @@
+"0","library(FactoMineR)"
+"0","library(factoextra)"
+"0",""
+"0","# Réaliser l'ACP avec jour comme variable qualitative supplémentaire"
+"0","acp_result <- PCA(df %>% select(-date_debut, -date_debut_standard), "
+"0","                  quali.sup = which(names(df) == ""jour""),  # Position de la variable jour"
+"0","                  scale.unit = TRUE)"
+"2","Erreur dans PCA(df %>% select(-date_debut, -date_debut_standard), quali.sup = which(names(df) ==  : 
+  
+The following variables are not quantitative:  jour
+"

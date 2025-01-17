@@ -1,0 +1,6 @@
+"0","# Graphiques pertinents"
+"0","ggplot(df, aes(x = temperature, y = O3)) +"
+"0","  geom_point() +"
+"0","  geom_smooth(method = ""lm"") +"
+"0","  labs(title = ""Relation entre la température et l'ozone"", x = ""Température"", y = ""Ozone"")"
+"0",""

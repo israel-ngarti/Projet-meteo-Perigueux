@@ -1,0 +1,3 @@
+"0","#fviz_pca_var(acp_complète, col.var = ""contrib"", repel = TRUE)"
+"0","fviz_pca_ind(acp_complète,col.ind=""cos2"")+ labs(title =""ACP normée (cos2)"") +"
+"0","scale_color_gradient2(low=""green"", mid=""blue"",high=""red"", midpoint=0.6, space=""Lab"")"

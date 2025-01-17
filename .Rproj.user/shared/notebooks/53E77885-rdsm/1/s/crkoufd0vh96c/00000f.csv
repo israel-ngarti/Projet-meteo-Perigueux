@@ -1,0 +1,8 @@
+"0","# Extraire les coordonnées des individus"
+"0","coord_ind <- as.data.frame(acp_complète$ind$coord)"
+"0",""
+"0","# Appliquer le filtre avec |Dim.1| > 3 ou |Dim.2| > 3"
+"0","Coord_ind_sup <- coord_ind[abs(coord_ind$Dim.1) > 3 | abs(coord_ind$Dim.2) > 3, ]"
+"0",""
+"0","# Afficher les individus extrêmes"
+"0","print(Coord_ind_sup)"

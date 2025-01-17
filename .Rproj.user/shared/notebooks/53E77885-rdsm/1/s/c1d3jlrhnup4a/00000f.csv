@@ -1,0 +1,2 @@
+"0","df$PM2.5 <- NULL"
+"0","print(miss_var_summary(df), n=35)"

@@ -1,0 +1,412 @@
+<p style="color:#FFF; background:#008080; padding:12px; font-size:20px; font-style:italic; text-align:center">
+[2024-2025]{style="width:49%; display:inline-block; text-align:left"}
+[MOIELWAY NGARTI Israël]{style="width:49%; display:inline-block; text-align:right"}
+[<b> PROJET D’ANALYSE MULTIVARIEE DES POLLUANTS ATMOSPHERIQUES A PERIGUEUX.</b>]{style="font-size:28px; font-style:normal"}<br> [M1IREF]{style="width:49%; display:inline-block; text-align:left"}
+[RDSM]{style="width:49%; display:inline-block; text-align:right"}</p>
+---
+#output: html_document
+format: 
+  html:
+    toc: true          # Activer la table des matières
+    self-contained: true # Intégrer les graphiques dans le HTML
+    toc-title: "Sommaire"  
+    code-fold: true      # Permet de replier/déplier le code
+    code-tools: true      # Ajoute des outils pour copier le code
+execute:
+  echo: true
+  warning: false
+  message: false
+  results: "markup" 
+---
+# Contexte
+La pollution atmosphérique constitue un défi majeur pour la santé publique et l’environnement, en particulier dans les zones urbaines où les activités humaines et les conditions météorologiques jouent un rôle important. Ce projet se concentre sur l’étude de la qualité de l’air à Périgueux en 2024, avec pour objectif d’analyser l’influence des paramètres météorologiques sur les niveaux de pollution, notamment ceux de l’Ozone (O3) et des particules fines (PM10).
+
+Grâce à des données collectées auprès d’Infoclimat et d’ATMO France, une exploration statistique approfondie a été réalisée à l’aide de techniques comme l’Analyse en Composantes Principales (ACP). Cette analyse vise à mettre en évidence les relations entre variables, identifier des périodes critiques et proposer des pistes d’interprétation pour mieux comprendre les mécanismes sous-jacents
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate) # pour la gestion des format date
+library(MASS)
+library(FactoMineR)
+library(corrplot)
+library(factoextra)
+library(plotly)
+# manipulation pour les données manquantes
+library(naniar)
+# si on veut faire de l'ACP en dynamique, ie explorer et voir directement le rendu
+library(Factoshiny)
+
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+load("ATMO-RDSM.rda")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+glimpse(df)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+print(miss_var_summary(df), n=35)
+```
+On décide de supprimer la variables PM2.5, et ensuite de nettoyer les lignes où des NA subsistent
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+df$PM2.5 <- NULL
+print(miss_var_summary(df), n=35)
+  
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+df <- df %>% na.omit()
+print(miss_var_summary(df), n=35)
+
+```
+On crée une variable qui donne le jour de mesure, ainsi que l’heure :
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+df <-df %>% mutate(jour=wday(date_debut,label=TRUE,abbr=FALSE))
+df <- df %>% mutate(heure=hour(date_debut))
+```
+
+Puis, en cas de besoin, un vecteur des identifiants avec une info sur la date et l’heure :
+```{r echo=TRUE, message=FALSE, warning=FALSE, include = FALSE}
+rownames.df <- paste(df$date_debut %>% day(),
+df$date_debut %>% month(),
+df$date_debut %>% hour(), sep=".")
+```
+## La Matrice de corrélation des variables
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Calcul de la matrice de corrélation pour les variables quantitatives
+quant_vars <- df %>% select(where(is.numeric))
+Matrix<-round(cor(quant_vars),3) #fonction round pour arrondir à 3 décimales 
+# Matrice en HTML simple
+html_table <- htmlTable::htmlTable(Matrix, caption = "Matrice de corrélation des variables quantitatives")
+html_table
+```
+
+### Analyse globale
+#### Corrélations Positives
+
+NO2 :
+
+NO (0.876) : Une forte corrélation positive indique que des niveaux élevés de NO2 sont associés à des niveaux élevés de NO. Cela peut être dû à des sources communes de pollution, comme les émissions des véhicules.
+
+PM10 (0.49) : Une corrélation positive montre que des niveaux élevés de NO2 sont associés à des niveaux élevés de PM10.Cela peut indiquer que les zones avec une pollution élevée en NO2 ont également des niveaux élevés de particules fines.
+
+O3 :
+
+vent_moyen (0.436) :Des niveaux élevés d'O3 sont associés à des vitesses de vent moyennes plus élevées. Cela peut indiquer que le vent aide à disperser l'ozone dans l'atmosphère..
+
+temperature (0.473) : Une corrélation positive montre que des niveaux élevés d'O3 sont associés à des températures plus élevées.Cela peut s'expliquer par le fait que l'ozone se forme plus facilement à des températures plus élevées.
+
+NO :
+
+PM10 (0.528) : PM10 (0.528) : Des niveaux élevés de NO sont associés à des niveaux élevés de PM10. Cela peut indiquer que les zones avec une pollution élevée en NO ont également des niveaux élevés de particules fines.
+
+temperature :
+
+point_de_rosee (0.846) : Une forte corrélation positive montre que des températures plus élevées sont associées à des points de rosée plus élevés.
+
+temperature_max (0.902) : Des températures plus élevées sont associées à des températures maximales plus élevées. Cela indique que les journées chaudes sont encore plus chaudes.
+
+point_de_rosee :
+
+temperature_min (0.893) : Des points de rosée plus élevés sont associés à des températures minimales plus élevées. Cela signifie que l'air est plus humide pendant les nuits chaudes.
+
+temperature_max (0.828) : Des points de rosée plus élevés sont associés à des températures maximales plus élevées. Cela signifie que l'air est plus humide pendant les journées chaudes.
+
+vent_moyen :
+
+vent_rafales_10min (0.893) : Des vitesses de vent moyennes plus élevées sont associées à des rafales de vent plus élevées sur 10 minutes. Cela signifie que les périodes de vent fort sont souvent accompagnées de rafales.
+
+
+#### Corrélations Négatives
+
+O3 :
+
+humidite (-0.612) : Des niveaux élevés d'O3 sont associés à des niveaux plus faibles d'humidité. Cela peut indiquer que l'ozone se forme plus facilement dans des conditions sèches.
+
+NO (-0.54) : Des niveaux élevés d'O3 sont associés à des niveaux plus faibles de NO. Cela peut indiquer que les sources de NO, comme les émissions des véhicules, réduisent les niveaux d'ozone.
+
+humidite :
+
+temperature (-0.633) : Des niveaux plus élevés d'humidité sont associés à des températures plus faibles. Cela peut indiquer que l'air est plus humide à des températures plus basses.
+
+### Les variables corrélées avec O3
+En se basant sur la matrice de corrélation on observe que les variables:
+NO(-0,540), et humidité(-0,612) sont liées négativement à l'ozone.
+Temperature maximum(0,454), vents_rafales_10min(0,478), vent_moyen(0,436) et temperature(0,473) sont liées positivement à l'ozone.
+
+### Les graphiques pertinents montrant la liaison
+Ces graphiques montrent la relation entre l'ozone et quelques variables.
+
+### Relation entre la température et l'ozone
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Graphiques pertinents
+ggplot(df, aes(x = temperature, y = O3)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Relation entre la température et l'ozone", x = "Température", y = "Ozone")
+
+```
+
+ Relation entre l'humidité et l'ozone
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Graphiques pertinents
+ggplot(df, aes(x = humidite, y = O3)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Relation entre l'humidité et l'ozone", x = "Humidité", y = "Ozone")
+```
+
+
+ Relation entre l'azote(NO) et l'ozone(O3)
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(df, aes(x = NO, y = O3)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Relation entre NO et l'ozone", x = "NO", y = "Ozone")
+
+```
+
+## Représentation des boites à moustaches parallèles de la variable Ozone, en fonction de l’heure de la journée. 
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Graphique des boîtes à moustaches de l'ozone par heure
+ggplot(df, aes(x = factor(heure), y = O3, fill=heure)) +  # Couleurs par heure
+  geom_boxplot(outlier.color = "darkred", outlier.shape = 19) +  # Points aberrants en rouge
+  labs(
+    title = "Distribution de l'ozone par heure (Boîtes à moustaches)",
+    x = "Heure de la journée",
+    y = "Concentration d'Ozone (µg/m³)"
+  ) +
+  theme_minimal() +  # Style propre et lisible
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Titre centré et en gras
+    axis.title = element_text(size = 12),  # Taille des titres des axes
+    axis.text = element_text(size = 12),  # Taille des textes des axes
+  )
+```
+
+#### Commentaires. 
+
+Les concentrations d'ozone augmentent progressivement à partir de 9h, atteignent un pic entre 14h et 16h, puis diminuent progressivement après 17h.
+Les concentrations sont les plus basses durant la nuit (0h - 7h).
+
+Dispersion :
+
+Pendant les heures de pointe de la journée (12h - 16h), les moustaches sont plus courtes, ce qui indique une plus faible variabilité. Cela peut refléter des conditions météorologiques stables.
+La nuit, la dispersion est plus élevée, suggérant des variations importantes dues à d'autres facteurs.
+
+Valeurs aberrantes :
+
+Quelques valeurs aberrantes sont visibles, principalement en milieu de journée et la nuit. Ces points peuvent représenter des événements ponctuels de pollution ou des erreurs de mesure.
+
+Interprétation :
+
+Pic en journée (14h - 16h) : L'ozone est produit par la photodissociation des polluants sous l'effet du rayonnement solaire.
+Baisse nocturne : En l'absence de lumière solaire, la production d'ozone diminue et sa concentration est réduite par des réactions chimiques.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Graphique des boîtes à moustaches de l'ozone par jour de la semaine
+ggplot(df, aes(x = jour, y = O3,fill= jour)) + 
+  geom_boxplot(outlier.color = "black", outlier.shape = 19) +  # Points aberrants en noir, boîtes blanches
+  labs(
+    title = "Distribution de l'ozone par jour de la semaine (Boîtes à moustaches)",
+    x = "Jour de la semaine",
+    y = "Concentration d'Ozone (µg/m³)"
+  ) +
+  theme_minimal() +  # Style minimaliste
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  
+    axis.title = element_text(size = 12),  
+    axis.text = element_text(size = 10),  
+  
+  )
+
+```
+Commentaires.
+
+Les médianes sont relativement similaires pour tous les jours de la semaine.
+La concentration en ozone ne semble pas varier de manière significative entre les jours.
+
+Dispersion :
+
+Les dispersions (écarts entre les moustaches supérieure et inférieure) sont également assez homogènes.
+La distribution est globalement stable pour tous les jours de la semaine, sans jours particulièrement atypiques.
+
+Interprétation :
+
+La concentration d'ozone semble suivre une tendance uniforme sur les jours de la semaine.
+Les activités humaines n’ont pas un effet marqué sur les variations journalières de l'ozone à périgueux.
+
+## Analyse en Composantes Principales du jeu de données complet.
+
+Nous allons faire une ACP normée car les variables n'ont pas les mêmes unités, étant donné que l'ACP permet de déterminer la distance entre les individus et la relation entre les variables alors si les variables mesurées sur des échelles diérentes, les variables de forte variance auront plus de poids dans le calcul de la distance Euclidienne que les variables de petite variance.
+Ainsi centrer-réduire les données permet donc de donner le même poids à toutes les variables dans le calcul de la distance entre deux individus.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Exclure les deux dates et   mettre la variable qualitative jour en supplementaire pour l'ACP
+acp_complète <- PCA(df %>% select(-date_debut,-date_debut_standard),
+                   quali.sup = 24,scale.unit = TRUE,graph=F)
+```
+```{r}
+plot.PCA(acp_complète)
+```
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+fviz_pca_var(acp_complète, col.var = "contrib", repel = TRUE)
+
+```
+### Les contributions des variables :
+
+Les flèches en bleues claires décrivent les variables les plus contributives sur les deux premiers axes (Dim1 et Dim2), ces variables sont entre autres:
+Dim1 :
+O3, pression, PM10, NO2 et NO semblent fortement corrélés et influencent l'axe 1.
+Ces variables sont probablement liées à des phénomènes de pollution et de variations de la pression.
+Dim2 :
+pluie_3h, pluie_6h, et pluie_intensite, temperature, humidité, point de rosée sont bien représentées.
+
+Ces variables représentent des précipitations et peuvent être liées à des conditions météorologiques spécifiques.
+
+###Liens entre les variables :
+
+NO, NO2, et PM10 sont corrélées entre elles (vecteurs proches sur le plan factoriel), ce qui suggère qu'elles décrivent des phénomènes similaires (pollution).
+pluie_3h, pluie_6h, et pluie_intensite sont également corrélées entre elles, décrivant probablement des épisodes pluvieux.
+temperature, point rosée, humidité sont également corrélées entre elles, décrivant des périodes d'été ou d'hiver.
+
+Opposition :
+
+Les vecteurs des précipitations (pluie_3h, pluie_6h) semblent en opposition à des variables telles que la pression, indiquant que les précipitations sont associées à des conditions atmosphériques spécifiques.
+On observe également l'opposition entre les températures et l'humidité; l'ozone (O3) et le dioxyte d'azote(NO2).
+
+### Individus avec coordonnées supérieures à 3 (graphe des individus - PCA)
+
+Les individus ayant des abscisses (Dim1) supérieures à 3 :
+Par exemple, 6584 et 7525.
+Ces points extrêmes sur l’axe 1 peuvent être caractérisés par des niveaux élevés de PM10 et de pollution (NO, NO2), ce qui correspond à des épisodes de forte pollution.
+Les individus ayant des ordonnées (Dim2) supérieures à 3 :
+Par exemple, 6584 et 7525.
+Ces points sur l’axe 2 sont probablement associés à des précipitations intenses (fortes contributions des variables pluie_3h, pluie_6h, etc.).
+
+
+## Reprennons l’ACP complète en incluant une seule variable de pluie. 
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# ACP avec une seule variable de pluie
+acp_reduite_pluie <- PCA(df %>% select(-date_debut, -date_debut_standard, -pluie_3h, -pluie_1h, -pluie_12h, -pluie_24h,-pluie_cumul_0h,-pluie_intensite,-pluie_intensite_max_1h),
+                        quali.sup = 17, # Variables supplémentaires
+                        scale.unit = TRUE, graph = F)
+```
+
+```{r}
+plot.PCA(acp_reduite_pluie)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+fviz_pca_var(acp_reduite_pluie, col.var = "contrib", repel = TRUE)
+
+```
+
+### Comparaisons avec l'ACP comlplète
+Dans le deuxième ACP, les variables de pluie ont été réduites à une seule représentation (par exemple, **pluie_6h**). Cette décision a eu plusieurs impacts sur l'analyse :
+
+**Réduction de l'influence des conditions pluvieuses :**
+   - Dans le premier ACP, les variables de pluie contribuaient de manière significative à **Dim2**, reflétant les conditions météorologiques humides et pluvieuses.
+   - En les simplifiant, **Dim2** est devenu moins représentatif des conditions pluvieuses et a capturé d'autres influences, comme les niveaux de pollution industrielle (NO, NO2, PM10).
+
+**Augmentation de la variance capturée par Dim1 :**
+   - La variance expliquée par **Dim1** est passée de **21.9%** dans le premier ACP à **29.3%** dans le deuxième. Cela indique que les conditions climatiques générales (température, humidité) sont devenues prédominantes dans l'analyse.
+
+ **Changement dans l'interprétation de Dim2 :**
+   - Dans le premier ACP, **Dim2** représentait principalement les précipitations et l'humidité.
+   - Dans le deuxième ACP, **Dim2** met davantage en lumière les polluants atmosphériques, en particulier ceux associés à des activités anthropiques (NO, NO2, PM10).
+
+ **Simplification de l'analyse :**
+   - En supprimant des variables redondantes, le deuxième ACP a permis de recentrer l'analyse sur les interactions principales entre climat et pollution, tout en facilitant l'interprétation.
+
+Ces changements montrent que le retrait des variables de pluie a permis de mieux comprendre l'impact des conditions climatiques générales sur les niveaux de pollution, tout en simplifiant les conclusions.
+
+
+## Reprennons une ACP en en incluant une seule variable par groupe de variables identiques
+```{r}
+# Sélectionner les variables actives pour l'ACP
+df_reduit <- df %>%
+  select(O3, PM10, temperature_max, vent_moyen, pression, pluie_intensite)
+
+# Sélectionner les variables supplémentaires
+var_suppl <- df %>%
+  select(NO,NO2)
+
+# Identifier les indices des variables supplémentaires 
+quanti_sup_indices <- which(names(df) %in% colnames(var_suppl))
+
+# Réaliser l'ACP
+acp_reduite <- PCA( df_reduit, scale.unit = TRUE, quanti.sup = quanti_sup_indices,  graph = F)
+```
+```{r}
+plot.PCA(acp_reduite)
+```
+
+
+```{r}
+fviz_pca_var(acp_reduite, col.var = "contrib", repel = TRUE)
+```
+
+###Comparaisons.
+Dans l'ACP complète, les axes révèlent une large interaction entre les variables climatiques et les polluants. Dim1 est principalement influencé par des variables comme O3, temperature_max, et vent_moyen, ce qui reflète des conditions favorables à la formation d'Ozone, notamment des journées chaudes et légèrement venteuses. Dim2, quant à lui, est dominé par les précipitations (pluie_1h, pluie_6h, pluie_24h) et l'humidité, soulignant leur rôle dans la dynamique des polluants comme NO et NO2.
+
+Dans l'ACP réduite, les relations sont simplifiées et plus ciblées. Dim1 conserve sa structure et reste lié à des facteurs climatiques favorisant l'Ozone, tandis que Dim2 est principalement influencé par pluie_intensite, PM10, et pression, traduisant les liens entre précipitations et pollution particulaire. Cette version réduit la complexité tout en gardant une lecture claire des effets du climat sur la pollution : Dim1 exprime l’impact des conditions chaudes et ventilées, et Dim2 met en avant les interactions entre pluie et particules.
+
+## Travail personnel avec factoshinny
+### Problématique
+
+**Comment les conditions météorologiques influencent-elles les niveaux de pollution de l'air à Périgueux ?**
+
+### Analyse exploratoire avec l'ACP
+
+```{r, eval = FALSE}
+require(Factoshiny)
+res <- Factoshiny(df[,-c(1,2)])
+```
+
+### Observations et interprétation
+
+- **Variables principales :** les variables météorologiques qui contribuent le plus aux axes principaux sont les précipitations(pluie_6h, pluie_1h, pluie_12), température, humidité).
+- **Groupes d'individus :** Identifier des clusters naturels en fonction des conditions de pollution et des variables météorologiques.
+- **Moments critiques :** Analyser les individus ayant des coordonnées extrêmes sur les axes principaux pour comprendre les combinaisons de conditions associées aux pics de pollution.
+
+### Analyse complémentaire
+```{r}
+# Extraction des moments critiques à partir des résultats ACP (résultats simulés)
+ind_coords <- as.data.frame(acp_complète$ind$coord)
+critical_ind <- ind_coords %>% filter(Dim.1 > 3 | Dim.2 > 3)
+
+# Caractérisation des moments critiques
+critical_periods <- df %>% filter(row.names(df) %in% row.names(critical_ind))
+critical_summary <- critical_periods %>%
+  summarise(across(c(NO2, NO, O3, PM10, temperature, humidite, vent_moyen), mean))
+
+html_table2 <- htmlTable::htmlTable(critical_summary,caption = "Tableau statistique")
+html_table2
+```
+
+
+### Visualisation des résultats
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Distribution des niveaux de pollution pour les périodes critiques
+critical_periods %>%
+  ggplot(aes(x=temperature, y=O3)) +
+  geom_point(alpha=0.5, color="red") +
+  geom_smooth(method="lm", color="blue") +
+  theme_minimal() +
+  ggtitle("Niveaux de pollution durant les périodes critiques")
+```
+Interprétation : Ce graphique montre une corrélation positive entre la température et les niveaux d'Ozone (O3) durant les périodes critiques. On observe que lorsque la température augmente, les niveaux d'Ozone tendent également à augmenter. Cette relation peut être expliquée par le fait que des températures plus élevées favorisent les réactions photochimiques responsables de la formation d'Ozone.
+
+## Conclusion
+
+Cette étude a démontré l'influence significative des conditions météorologiques sur les niveaux de pollution atmosphérique à Périgueux. À travers l'Analyse en Composantes Principales (ACP) et l'exploration dynamique avec Factoshiny, nous avons identifié des variables clés, telles que la température et l'humidité, qui jouent un rôle crucial dans les variations des niveaux d'Ozone et d'autres polluants. 
+
+L'analyse des individus a permis de repérer des périodes critiques, souvent caractérisées par des températures élevées et des conditions favorisant les réactions chimiques à l'origine des pics de pollution. Ces résultats offrent des pistes précieuses pour anticiper et atténuer l'impact de la pollution sur la population locale.
+
+
+

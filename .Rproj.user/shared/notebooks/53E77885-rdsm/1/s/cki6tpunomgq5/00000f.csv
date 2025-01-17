@@ -1,0 +1,6 @@
+"0","# ACP avec une seule variable de pluie"
+"0","acp_reduite_pluie <- PCA(df %>% select(-date_debut, -date_debut_standard, -pluie_3h, -pluie_1h, -pluie_12h, -pluie_24h,-pluie_cumul_0h,-pluie_intensite,-pluie_intensite_max_1h),"
+"0","                        quali.sup = 17, # Variables supplémentaires"
+"0","                        scale.unit = TRUE, graph = FALSE)"
+"0","#fviz_pca_var(acp_reduite_pluie, col.var = ""contrib"", repel = TRUE)"
+"0","fviz_pca_var(acp_reduite_pluie, col.var = ""contrib"", repel = TRUE)"

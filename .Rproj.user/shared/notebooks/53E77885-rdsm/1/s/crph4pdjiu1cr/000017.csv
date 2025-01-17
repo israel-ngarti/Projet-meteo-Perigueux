@@ -1,0 +1,2 @@
+"0","df <- df %>% na.omit()"
+"0","print(miss_var_summary(df), n=35)"
